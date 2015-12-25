@@ -94,7 +94,7 @@ def format():
     l:buffer[3] - (out) the error message, if there is an error.
     """
 
-    buffer = vim.bindeval('l:buffer')
+    buffer = vim.eval('l:buffer')
     custom_values = buffer[0]
     value = buffer[1]
     # Now translate the Vim value to something that uses Python types (e.g.
@@ -114,11 +114,12 @@ def format():
         custom_values['null'], custom_values['true'], custom_values['false'])
 
     try:
-        buffer[2] = json.dumps(value, allow_nan=False)
+        vim.command('let l:buffer[2] = "%s"' %
+                json.dumps(value, allow_nan=False))
     except ValueError as e:  # e.g. attempting to format NaN
-        buffer[3] = e.message
+        vim.command('let l:buffer[3] = "%s"' % e.message)
     except TypeError as e:  # e.g. attempting to format a Function
-        buffer[3] = e.message
+        vim.command('let l:buffer[3] = "%s"' % e.message)
 
 
 def parse():
@@ -134,14 +135,14 @@ def parse():
     l:buffer[2] - (out) the Vim value result.
     l:buffer[3] - (out) the error message, if there is an error.
     """
-    buffer = vim.bindeval('l:buffer')
+    buffer = vim.eval('l:buffer')
 
     custom_values = buffer[0]
     json_str = buffer[1]
     try:
         value = [json.loads(json_str)]
     except ValueError as e:
-        buffer[3] = e.message
+        vim.command('let l:buffer[3] = %s' % e.message)
         return
 
     # Now mutate the resulting Python object to something that can be stored
@@ -150,4 +151,10 @@ def parse():
         value,
         custom_values['null'], custom_values['true'], custom_values['false'])
 
-    buffer[2] = value[0]
+    try:
+        vim.command('let l:buffer[2] = %s' %
+                json.dumps(value[0], allow_nan=False))
+    except ValueError as e:
+        vim.command('let l:buffer[3] = "%s"' % e.message)
+    except TypeError as e:
+        vim.command('let l:buffer[3] = "%s"' % e.message)
